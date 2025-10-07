@@ -81,7 +81,7 @@ pip install -r requirements.txt
 
 ---
 
-## 🧷 Notes & Gotchas
+## 🧷 Notes
 
 * **Order matters (C¹):** leaky → Hodge split → split-leak → **heat**.
 * **Lawful couplings only:** no arbitrary dense cross-degree matrices.

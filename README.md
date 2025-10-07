@@ -7,39 +7,66 @@
 
 ## ✨ Highlights
 
-* **Lawful geometry:** cross-degree couplings are *only* via (d_0,\delta_0,d_1,\delta_1) (discrete grad/div/curl/co-grad).
-* **Hodge-projected 1-forms:** (y = y_{\text{ex}} + y_{\text{co}} + y_{\text{ha}}); apply split leaks with (\lambda_{\text{ha}}\ll \lambda_{\text{ex}},\lambda_{\text{co}}).
-* **Nonexpansive smoothing:** per-degree heat steps (H_k(\tau_k)=I-\tau_k L_k) (SPSD Laplacians).
-* **ESP by design:** small 3×3 block Lipschitz matrix (M) with (\rho(M){<}1) (Gershgorin-friendly row sums).
-* **Linear-time updates:** sparse matvecs; Hodge projector amortized every (T_{\text{proj}}) steps.
-* **Interpretable diagnostics:** residuals ((d_0x,\delta_0y,d_1y,\delta_1z)), **Harmonic Energy Fraction (HEF)**, ablation toggles.
+* **Lawful geometry:** cross-degree couplings are *only* via `d0`, `delta0`, `d1`, `delta1` (discrete grad/div/curl/co-grad).
+* **Hodge-projected 1-forms:** `y = y_ex + y_co + y_ha`; apply split leaks with `lambda_ha << lambda_ex, lambda_co`.
+* **Nonexpansive smoothing:** per-degree heat steps `Hk(tau_k) = I − tau_k * Lk` (SPSD Laplacians).
+* **ESP by design:** small 3×3 block Lipschitz matrix `M` with `rho(M) < 1` (Gershgorin-friendly row sums).
+* **Linear-time updates:** sparse matvecs; Hodge projector amortized every `T_proj` steps.
+* **Interpretable diagnostics:** residuals `d0 x`, `delta0 y`, `d1 y`, `delta1 z`; **Harmonic Energy Fraction (HEF)**; ablation toggles.
 
 ---
 
 ## 🧠 Method (one-screen summary)
 
-* **State:** (x_t\in C^0) (0-forms), (y_t\in C^1) (1-forms), (z_t\in C^2) (2-forms).
-* **Innovations**
-  [
-  \begin{aligned}
-  \xi^x_t&=\phi(W_xx_{t-1}+\delta_0 y_{t-1}+W^{(0)}*{\text{in}}u_t),\
-  \xi^y_t&=\phi(W_yy*{t-1}+\alpha d_0x_{t-1}+\beta \delta_1z_{t-1}+W^{(1)}*{\text{in}}u_t),\
-  \xi^z_t&=\phi(W_zz*{t-1}+\gamma d_1y_{t-1}+W^{(2)}_{\text{in}}u_t).
-  \end{aligned}
-  ]
-* **Leaky + heat**
-  [
-  x_t=H_0(\tau_0)!\big((1-\lambda_0)x_{t-1}+\lambda_0\xi^x_t\big),;;
-  y_t=H_1(\tau_1)!\big((1-\lambda_1)y_{t-1}+\lambda_1\xi^y_t\big),;;
-  z_t=H_2(\tau_2)!\big((1-\lambda_2)z_{t-1}+\lambda_2\xi^z_t\big).
-  ]
-* **Hodge on (C^1)** (every (T_{\text{proj}}) steps):
-  solve
-  ((d_0^\top\star_1 d_0+\varepsilon\star_0)p=d_0^\top\star_1 y\Rightarrow y_{\text{ex}}=d_0p),
-  ((d_1\star_1^{-1}d_1^\top+\varepsilon\star_2)q=d_1y\Rightarrow y_{\text{co}}=\star_1^{-1}d_1^\top q),
-  set (y_{\text{ha}}=y-y_{\text{ex}}-y_{\text{co}}),
-  then ( \tilde y = y^{\text{pre}}-\lambda_{\text{ex}}y_{\text{ex}}-\lambda_{\text{co}}y_{\text{co}}-\lambda_{\text{ha}}y_{\text{ha}}),
-  and **heat**: (y_t=(I-\tau_1 L_1)\tilde y).
+**State:**
+`x_t ∈ C^0` (0-forms), `y_t ∈ C^1` (1-forms), `z_t ∈ C^2` (2-forms)
+
+**Innovations**
+
+```text
+xi_x(t) = phi( Wx x(t-1) + delta0 y(t-1) + Win0 u(t) )
+xi_y(t) = phi( Wy y(t-1) + alpha d0 x(t-1) + beta delta1 z(t-1) + Win1 u(t) )
+xi_z(t) = phi( Wz z(t-1) + gamma d1 y(t-1) + Win2 u(t) )
+```
+
+**Leaky + heat**
+
+```text
+x(t) = H0(tau0) * [ (1 - lambda0) x(t-1) + lambda0 * xi_x(t) ]
+y(t) = H1(tau1) * [ (1 - lambda1) y(t-1) + lambda1 * xi_y(t) ]
+z(t) = H2(tau2) * [ (1 - lambda2) z(t-1) + lambda2 * xi_z(t) ]
+
+where: Hk(tau) = I - tau * Lk  (nonexpansive because Lk ⪰ 0)
+```
+
+**Hodge on `C^1`** (every `T_proj` steps)
+
+```text
+# Project y into exact / coexact / harmonic components
+# (ε > 0 is a small Tikhonov regularizer; stars are SPD "mass" matrices)
+
+Solve: (d0^T * star1 * d0 + ε * star0) p = d0^T * star1 * y
+=> y_ex = d0 * p
+
+Solve: (d1 * star1^{-1} * d1^T + ε * star2) q = d1 * y
+=> y_co = star1^{-1} * d1^T * q
+
+y_ha = y - y_ex - y_co
+
+# Split-leak and heat
+y_tilde = y_pre
+          - lambda_ex * y_ex
+          - lambda_co * y_co
+          - lambda_ha * y_ha
+
+y(t) = (I - tau1 * L1) * y_tilde
+```
+
+**Notes**
+
+* Use a 1-Lipschitz `phi` (e.g., `tanh` or clipped ReLU).
+* Cross-degree couplings are restricted to `d0`, `delta0`, `d1`, `delta1` only (no arbitrary dense mixing).
+* Keep row sums of `M` strictly `< 1` for an ESP-safe configuration.
 
 ---
 

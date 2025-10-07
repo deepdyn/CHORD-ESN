@@ -1,106 +1,103 @@
-# Geometric Reservoirs
+# CHORD-ESN: Cycle/Harmonic ORthogonal Decomposition Echo-State Networks
 
-A curated playground for **reservoir-computing architectures** and their
-dynamical analysis. Everything is pure NumPy + Scikit-learn (except for gradient based baselines). One can clone, hack, and run the whole repo inside a vanilla Jupyter install.
+> **Topology-anchored long memory for reservoirs.**
+> CHORD-ESN embeds the reservoir state as discrete differential forms on a 2-simplicial complex and uses a Hodge projector to separate fast (exact/coexact) transients from **slow harmonic** circulations. The slow channel’s capacity is governed by the first Betti number (b_1); stability follows from non-expansive DEC heat and a small block-contraction check (ESP).
 
+---
 
-## ✨ Key Features
+## ✨ Highlights
 
-* **15 + reservoir classes**
+* **Lawful geometry:** cross-degree couplings are *only* via (d_0,\delta_0,d_1,\delta_1) (discrete grad/div/curl/co-grad).
+* **Hodge-projected 1-forms:** (y = y_{\text{ex}} + y_{\text{co}} + y_{\text{ha}}); apply split leaks with (\lambda_{\text{ha}}\ll \lambda_{\text{ex}},\lambda_{\text{co}}).
+* **Nonexpansive smoothing:** per-degree heat steps (H_k(\tau_k)=I-\tau_k L_k) (SPSD Laplacians).
+* **ESP by design:** small 3×3 block Lipschitz matrix (M) with (\rho(M){<}1) (Gershgorin-friendly row sums).
+* **Linear-time updates:** sparse matvecs; Hodge projector amortized every (T_{\text{proj}}) steps.
+* **Interpretable diagnostics:** residuals ((d_0x,\delta_0y,d_1y,\delta_1z)), **Harmonic Energy Fraction (HEF)**, ablation toggles.
 
-  | Category | Files |
-  |----------|-------|
-  | Standard / baseline | `cycle.py`, `sparse.py`, `deep_esn.py`, `parallel_esn.py` |
-  | Biological | `bei_stp.py`, `short_term_plasticity.py`, `glia_neuron.py` |
-  | Geometric | `euclidean.py`, `spherical.py`, `hyper.py` |
-  | Others | `mci_esn.py`, `swirl_gated_multicycle.py`, `resonator.py`, … |
+---
 
-* **Analysis utilities**
-  * eigen-spectrum plots  
-  * linear memory-capacity curves  
-  * participation ratio (effective dimensionality)  
-  * largest Lyapunov exponent 
+## 🧠 Method (one-screen summary)
 
-* **Reproducible notebooks** in `notebooks/`
-* Figures auto-saved in **`figures/`** at user-chosen dpi
-* Single-command install: `pip install -r requirements.txt`
+* **State:** (x_t\in C^0) (0-forms), (y_t\in C^1) (1-forms), (z_t\in C^2) (2-forms).
+* **Innovations**
+  [
+  \begin{aligned}
+  \xi^x_t&=\phi(W_xx_{t-1}+\delta_0 y_{t-1}+W^{(0)}*{\text{in}}u_t),\
+  \xi^y_t&=\phi(W_yy*{t-1}+\alpha d_0x_{t-1}+\beta \delta_1z_{t-1}+W^{(1)}*{\text{in}}u_t),\
+  \xi^z_t&=\phi(W_zz*{t-1}+\gamma d_1y_{t-1}+W^{(2)}_{\text{in}}u_t).
+  \end{aligned}
+  ]
+* **Leaky + heat**
+  [
+  x_t=H_0(\tau_0)!\big((1-\lambda_0)x_{t-1}+\lambda_0\xi^x_t\big),;;
+  y_t=H_1(\tau_1)!\big((1-\lambda_1)y_{t-1}+\lambda_1\xi^y_t\big),;;
+  z_t=H_2(\tau_2)!\big((1-\lambda_2)z_{t-1}+\lambda_2\xi^z_t\big).
+  ]
+* **Hodge on (C^1)** (every (T_{\text{proj}}) steps):
+  solve
+  ((d_0^\top\star_1 d_0+\varepsilon\star_0)p=d_0^\top\star_1 y\Rightarrow y_{\text{ex}}=d_0p),
+  ((d_1\star_1^{-1}d_1^\top+\varepsilon\star_2)q=d_1y\Rightarrow y_{\text{co}}=\star_1^{-1}d_1^\top q),
+  set (y_{\text{ha}}=y-y_{\text{ex}}-y_{\text{co}}),
+  then ( \tilde y = y^{\text{pre}}-\lambda_{\text{ex}}y_{\text{ex}}-\lambda_{\text{co}}y_{\text{co}}-\lambda_{\text{ha}}y_{\text{ha}}),
+  and **heat**: (y_t=(I-\tau_1 L_1)\tilde y).
 
+---
 
-## 📂 Repository Layout
+## 🔧 Installation
 
-```
-RESERVOIR-EXPERIMENTS/
-├── figures/                 ← output PNGs land here
-├── notebooks/
-│   └── main.ipynb           ← run all demos
-├── reservoirs/
-│   ├── cycle.py
-│   ├── bei\_stp.py
-│   ├── spherical.py
-│   ├── hyper.py
-│   └── …                    ← many more
-├── utils/
-│   ├── dynamics.py          ← spectrum, MC, PR, Lyapunov
-│   ├── plotting.py          ← nice 2-D / 3-D plots
-│   ├── metrics.py           ← NRMSE, VPT, ADev …
-│   └── helpers.py           ← misc. math helpers
-└── requirements.txt
-```
-
-## 🚀 Quick-start
-
-git clone https://github.com/<your-handle>/Reservoir-Experiments.git
-cd Reservoir-Experiments
-python3 -m venv .venv && source .venv/bin/activate
+```bash
+# Python >= 3.10
+git clone https://github.com/deepdyn/CHORD-ESN && cd CHORD-ESN
+python -m venv .venv && source .venv/bin/activate   # or conda env create ...
 pip install -r requirements.txt
+```
 
-jupyter lab   # open notebooks/main.ipynb
+---
 
+## 🧷 Notes & Gotchas
 
-`main.ipynb` demonstrates:
+* **Order matters (C¹):** leaky → Hodge split → split-leak → **heat**.
+* **Lawful couplings only:** no arbitrary dense cross-degree matrices.
+* **Nonlinearity:** use a 1-Lipschitz activation (`tanh`, clipped ReLU).
+* **HEF window:** compute over the valid prediction window (H^\star) (same as VPT(^\star)).
 
-1. Training & multi-step prediction on Lorenz-63
-2. Batch benchmarking across reservoirs
-3. Eigen-spectrum, memory-capacity and participation-ratio plots
-   (saved under `figures/`)
+---
 
+## 📚 Citation
 
-## 🛠️ Add Your Own Reservoir
+If you find CHORD-ESN useful, please cite:
 
-1. Drop `<name>.py` into `reservoirs/` exposing a NumPy weight matrix in
-   one of the usual attributes (`W`, `W_res`, `W_base`, `W_nn`, `W0`, …).
-2. Provide `_step(u)` **or** `_update(u)` and `reset_state()`.
-3. Import it in a notebook; all analysis helpers work out-of-the-box.
-
-
-## 📊 Dynamical Diagnostics (`utils/dynamics.py`)
-
-| Function                         | Purpose                           | Call                                           |
-| -------------------------------- | --------------------------------- | ---------------------------------------------- |
-| `plot_eigen_spectrum`            | Scatter eigenvalues + unit circle | `plot_eigen_spectrum(res)`                     |
-| `compute_memory_capacity`        | MC spectrum + total MC            | `delays, C, MC = compute_memory_capacity(res)` |
-| `plot_memory_capacity`           | Save/plot MC curve                | `plot_memory_capacity(delays, C)`              |
-| `estimate_participation_ratio`   | Effective dimensionality          | `pr, eig = estimate_participation_ratio(res)`  |
-| `estimate_lyapunov`              | Largest Lyapunov exponent         | `lyap = estimate_lyapunov(res)`                |
-
-
-## 📑 Citation
-
-If you use this code in academic work, please cite the original
-architectures (see docstrings) **and** this repository:
-
-@misc{geometric-reservoirs2025,
-  author = {Singh, Pradeep},
-  title  = {Geometric Reservoirs: a geometric & bio-inspired ESN toolbox},
-  year   = {2025},
-  url    = {https://github.com/deepdyn/geometric-reservoirs}
+```bibtex
+@article{singh2025CHORDESN,
+  title   = {Hodge-Projected Echo-State Networks with Topologically Anchored Memory for Chaotic Flows},
+  author  = {P. Singh, O. R. Madare, R. Balasubramanian},
+  journal = {},
+  year    = {2025},
+  note    = {Code: CHORD-ESN}
 }
+```
 
+---
 
-## 📝 License
+## 🛡️ License
 
-Distributed under the Apache License – see `LICENSE` for details.
+This project is released under the **MIT License**. See `LICENSE`.
 
-Enjoy exploring strange attractors in weird geometries! 🎢
+---
 
+## 🙏 Acknowledgements
 
+We build on discrete exterior calculus (Hirani; Desbrun et al.), Hodge/graph signal processing (Barbarossa & Sardellitti; Schaub et al.), and the reservoir computing literature (Jaeger; Maass; Lukoševičius & Jaeger). 
+
+---
+
+## 📫 Questions / Issues
+
+Please open a GitHub issue with:
+
+* dataset + config,
+* minimal command to reproduce,
+* environment info (`python -V`; `pip freeze`),
+* logs/tracebacks.
+
+We’re happy to help!

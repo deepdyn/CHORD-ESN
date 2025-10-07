@@ -108,7 +108,7 @@ If you find CHORD-ESN useful, please cite:
 
 ## 🛡️ License
 
-This project is released under the **MIT License**. See `LICENSE`.
+This project is released under the **Apache-2.0 license**. See `LICENSE`.
 
 ---
 

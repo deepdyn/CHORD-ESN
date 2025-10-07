@@ -1,0 +1,17 @@
+# ---- Core numerical stack ----
+numpy>=1.23,<2.0
+scipy>=1.9,<2.0
+pandas>=1.5,<2.0
+
+# ---- Machine-learning & reservoirs ----
+scikit-learn>=1.2,<2.0
+
+# ---- Visualisation ----
+matplotlib>=3.7,<4.0
+seaborn>=0.12,<0.14
+
+# ---- Jupyter environment ----
+jupyterlab>=4.0,<5.0   # includes notebook interface
+
+# ---- pretty-printing (tabular CLI) ----
+tabulate>=0.9,<1.0

@@ -98,7 +98,7 @@ If you find CHORD-ESN useful, please cite:
 @article{singh2025CHORDESN,
   title   = {Hodge-Projected Echo-State Networks with Topologically Anchored Memory for Chaotic Flows},
   author  = {P. Singh, O. R. Madare, R. Balasubramanian},
-  journal = {},
+  journal = {Chaos, Solitons and Fractals (Elsevier)},
   year    = {2025},
   note    = {Code: CHORD-ESN}
 }
